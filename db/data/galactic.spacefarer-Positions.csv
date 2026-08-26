@@ -1,0 +1,15 @@
+code;name;descr;department_code
+MISSION_COMMANDER;Mission Commander;Commands intergalactic missions and coordinates the crew;FLIGHT_OPERATIONS
+STARSHIP_PILOT;Starship Pilot;Operates spacecraft during interplanetary missions;FLIGHT_OPERATIONS
+NAVIGATION_OFFICER;Navigation Officer;Plans routes and performs wormhole navigation;FLIGHT_OPERATIONS
+CHIEF_ENGINEER;Chief Engineer;Leads spacecraft engineering and maintenance;ENGINEERING
+SYSTEMS_ENGINEER;Systems Engineer;Maintains onboard systems and technical infrastructure;ENGINEERING
+ENGINEERING_ASSISTANT;Engineering Assistant;Supports engineering operations and maintenance;ENGINEERING
+CHIEF_MEDICAL_OFFICER;Chief Medical Officer;Leads medical operations and protects crew health;MEDICAL
+SPACE_PHYSICIAN;Space Physician;Provides medical care during intergalactic missions;MEDICAL
+MEDICAL_ASSISTANT;Medical Assistant;Supports physicians and monitors crew health;MEDICAL
+LEAD_SCIENTIST;Lead Scientist;Leads scientific research during cosmic missions;SCIENCE
+ASTROBIOLOGIST;Astrobiologist;Studies extraterrestrial life and planetary ecosystems;SCIENCE
+RESEARCH_ASSISTANT;Research Assistant;Supports experiments and analyzes scientific samples;SCIENCE
+SECURITY_CHIEF;Security Chief;Leads security operations and threat response;SECURITY
+SECURITY_OFFICER;Security Officer;Protects the crew and mission assets;SECURITY

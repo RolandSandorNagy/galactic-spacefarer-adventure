@@ -11,5 +11,10 @@
   "scripts": {
     "start": "cds-serve"
   },
+  "cds": {
+    "features": {
+      "assert_integrity": "db"
+    }
+  },
   "private": true
 }
