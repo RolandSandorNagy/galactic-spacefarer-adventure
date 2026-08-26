@@ -1,0 +1,13 @@
+{
+  "ID": "77777777-7777-4777-8777-777777777777",
+  "firstName": "Nova",
+  "lastName": "Starlight",
+  "email": "nova.starlight@galactic.example",
+  "originPlanet_code": "PLANET_X",
+  "position_code": "STARSHIP_PILOT",
+  "stardustCollection": 2100,
+  "stardustCollectionStatus": "READY",
+  "wormholeNavigationSkill": 78,
+  "navigationRank": "EXPERT",
+  "spacesuitColor_code": "BLUE"
+}
