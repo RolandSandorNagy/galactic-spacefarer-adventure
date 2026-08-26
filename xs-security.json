@@ -1,0 +1,59 @@
+{
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.SpacefarerViewer",
+      "description": "SpacefarerViewer"
+    },
+    {
+      "name": "$XSAPPNAME.SpacefarerManager",
+      "description": "SpacefarerManager"
+    },
+    {
+      "name": "$XSAPPNAME.SpacefarerAdmin",
+      "description": "SpacefarerAdmin"
+    }
+  ],
+  "attributes": [
+    {
+      "name": "allowedPlanet",
+      "description": "allowedPlanet",
+      "valueType": "s",
+      "valueRequired": true
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "SpacefarerViewer",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.SpacefarerViewer"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "SpacefarerManager",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.SpacefarerManager"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "SpacefarerAdmin",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.SpacefarerAdmin"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "userattributes",
+      "description": "generated",
+      "default-role-name": "Attributes of a User",
+      "scope-references": [],
+      "attribute-references": [
+        "allowedPlanet"
+      ]
+    }
+  ]
+}

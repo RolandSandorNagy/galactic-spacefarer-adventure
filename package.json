@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@sap/cds": "^10"
+    "@sap/cds": "^10",
+    "@sap/xssec": "^4"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^3"
@@ -14,6 +15,60 @@
   "cds": {
     "features": {
       "assert_integrity": "db"
+    },
+    "requires": {
+      "auth": {
+        "kind": "basic",
+        "users": {
+          "planet-x-viewer": {
+            "password": "test",
+            "roles": [
+              "SpacefarerViewer"
+            ],
+            "attr": {
+              "allowedPlanet": "PLANET_X"
+            }
+          },
+          "planet-y-viewer": {
+            "password": "test",
+            "roles": [
+              "SpacefarerViewer"
+            ],
+            "attr": {
+              "allowedPlanet": "PLANET_Y"
+            }
+          },
+          "planet-x-manager": {
+            "password": "test",
+            "roles": [
+              "SpacefarerManager"
+            ],
+            "attr": {
+              "allowedPlanet": "PLANET_X"
+            }
+          },
+          "planet-y-manager": {
+            "password": "test",
+            "roles": [
+              "SpacefarerManager"
+            ],
+            "attr": {
+              "allowedPlanet": "PLANET_Y"
+            }
+          },
+          "galactic-admin": {
+            "password": "test",
+            "roles": [
+              "SpacefarerAdmin"
+            ]
+          }
+        }
+      },
+      "[production]": {
+        "auth": {
+          "kind": "xsuaa"
+        }
+      }
     }
   },
   "private": true
