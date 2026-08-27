@@ -56,6 +56,8 @@ const waitFor = async (predicate, { timeout = 1000, interval = 10 } = {}) => {
   }
 };
 
+const fioriServiceUrl = '/galactic-ui';
+
 beforeEach(data.reset);
 
 describe('GalacticService authentication', () => {
@@ -422,7 +424,7 @@ describe('GalacticService cosmic preparation', () => {
 
     expect(updatedResponse.data.navigationRank)
       .to.equal(originalResponse.data.navigationRank);
-    });  
+    });
 });
 
 describe('GalacticService cosmic notifications', () => {
@@ -546,7 +548,7 @@ describe('GalacticService cosmic notifications', () => {
     expect(readResponse.data.email).to.equal(
       planetXSpacefarer.email
     );
-  });  
+  });
 });
 
 describe('GalacticService list query behavior', () => {
@@ -579,5 +581,320 @@ describe('GalacticService list query behavior', () => {
         spacefarer.stardustCollectionStatus === 'READY'
       )
     ).to.equal(true);
+  });
+});
+
+describe('GalacticFioriService draft lifecycle and authorization', () => {
+  const planetXSpacefarerId =
+    '44444444-4444-4444-8444-444444444444';
+
+  const activeSpacefarerUrl =
+    `${fioriServiceUrl}/SpaceFarers(` +
+    `ID=${planetXSpacefarerId},IsActiveEntity=true)`;
+
+  const draftSpacefarerUrl =
+    `${fioriServiceUrl}/SpaceFarers(` +
+    `ID=${planetXSpacefarerId},IsActiveEntity=false)`;
+
+  it('edits and activates a spacefarer draft', async () => {
+    const editResponse = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 201]).to.include(editResponse.status);
+
+    const patchResponse = await PATCH(
+      draftSpacefarerUrl,
+      {
+        stardustCollection: 5000,
+        spacesuitColor_code: 'RED'
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 204]).to.include(patchResponse.status);
+
+    const activateResponse = await POST(
+      `${draftSpacefarerUrl}/GalacticFioriService.draftActivate`,
+      {},
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 201]).to.include(activateResponse.status);
+
+    const readResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(readResponse.status).to.equal(200);
+    expect(readResponse.data.stardustCollection).to.equal(5000);
+    expect(readResponse.data.stardustCollectionStatus).to.equal('ELITE');
+    expect(readResponse.data.spacesuitColor_code).to.equal('RED');
+  });
+
+  it('prevents a viewer from starting draft editing', async () => {
+    const response = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('planet-x-viewer')
+    );
+
+    expect([403, 404]).to.include(response.status);
+  });
+
+  it('prevents a Planet Y manager from editing a Planet X record', async () => {
+    const response = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('planet-y-manager')
+    );
+
+    expect([403, 404]).to.include(response.status);
+  });
+
+  it('allows a Planet X manager to edit and activate a Planet X record', async () => {
+    const editResponse = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('planet-x-manager')
+    );
+
+    expect([200, 201]).to.include(editResponse.status);
+
+    const patchResponse = await PATCH(
+      draftSpacefarerUrl,
+      {
+        stardustCollection: 1000,
+        spacesuitColor_code: 'BLUE'
+      },
+      requestConfig('planet-x-manager')
+    );
+
+    expect([200, 204]).to.include(patchResponse.status);
+
+    const activateResponse = await POST(
+      `${draftSpacefarerUrl}/GalacticFioriService.draftActivate`,
+      {},
+      requestConfig('planet-x-manager')
+    );
+
+    expect([200, 201]).to.include(activateResponse.status);
+
+    const readResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(readResponse.status).to.equal(200);
+    expect(readResponse.data.stardustCollection).to.equal(1000);
+    expect(readResponse.data.stardustCollectionStatus).to.equal('READY');
+    expect(readResponse.data.spacesuitColor_code).to.equal('BLUE');
+  });
+
+  it('ignores changes to readonly fields in a draft', async () => {
+    const originalResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(originalResponse.status).to.equal(200);
+
+    const original = originalResponse.data;
+
+    const editResponse = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 201]).to.include(editResponse.status);
+
+    const patchResponse = await PATCH(
+      draftSpacefarerUrl,
+      {
+        firstName: 'Spoofed',
+        lastName: 'Candidate',
+        email: 'spoofed@galactic.example',
+        originPlanet_code: 'PLANET_Y',
+        wormholeNavigationSkill: 100,
+        navigationRank: 'MASTER',
+        stardustCollectionStatus: 'ELITE'
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 204]).to.include(patchResponse.status);
+
+    const activateResponse = await POST(
+      `${draftSpacefarerUrl}/GalacticFioriService.draftActivate`,
+      {},
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 201]).to.include(activateResponse.status);
+
+    const updatedResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(updatedResponse.status).to.equal(200);
+    expect(updatedResponse.data.firstName).to.equal(original.firstName);
+    expect(updatedResponse.data.lastName).to.equal(original.lastName);
+    expect(updatedResponse.data.email).to.equal(original.email);
+    expect(updatedResponse.data.originPlanet_code)
+      .to.equal(original.originPlanet_code);
+    expect(updatedResponse.data.wormholeNavigationSkill)
+      .to.equal(original.wormholeNavigationSkill);
+    expect(updatedResponse.data.navigationRank)
+      .to.equal(original.navigationRank);
+    expect(updatedResponse.data.stardustCollectionStatus)
+      .to.equal(original.stardustCollectionStatus);
+  });
+
+  it('does not activate a draft with invalid stardust', async () => {
+    const originalResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(originalResponse.status).to.equal(200);
+
+    const originalStardust =
+      originalResponse.data.stardustCollection;
+
+    const editResponse = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 201]).to.include(editResponse.status);
+
+    const patchResponse = await PATCH(
+      draftSpacefarerUrl,
+      {
+        stardustCollection: -1
+      },
+      requestConfig('galactic-admin')
+    );
+
+    if (patchResponse.status < 400) {
+      const activateResponse = await POST(
+        `${draftSpacefarerUrl}/GalacticFioriService.draftActivate`,
+        {},
+        requestConfig('galactic-admin')
+      );
+
+      expect(activateResponse.status).to.equal(400);
+    } else {
+      expect(patchResponse.status).to.equal(400);
+    }
+
+    const activeResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(activeResponse.status).to.equal(200);
+    expect(activeResponse.data.stardustCollection)
+      .to.equal(originalStardust);
+  });
+
+  it('discards a draft without changing the active record', async () => {
+    const originalResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(originalResponse.status).to.equal(200);
+
+    const originalStardust =
+      originalResponse.data.stardustCollection;
+
+    const editResponse = await POST(
+      `${activeSpacefarerUrl}/GalacticFioriService.draftEdit`,
+      {
+        PreserveChanges: false
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 201]).to.include(editResponse.status);
+
+    const patchResponse = await PATCH(
+      draftSpacefarerUrl,
+      {
+        stardustCollection: 5000
+      },
+      requestConfig('galactic-admin')
+    );
+
+    expect([200, 204]).to.include(patchResponse.status);
+
+    const discardResponse = await DELETE(
+      draftSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(discardResponse.status).to.equal(204);
+
+    const activeResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('galactic-admin')
+    );
+
+    expect(activeResponse.status).to.equal(200);
+    expect(activeResponse.data.stardustCollection)
+      .to.equal(originalStardust);
+  });
+
+  it('prevents a viewer from deleting through the Fiori service', async () => {
+    const response = await DELETE(
+      activeSpacefarerUrl,
+      requestConfig('planet-x-viewer')
+    );
+
+    expect([403, 404]).to.include(response.status);
+  });
+
+  it('prevents a Planet Y manager from deleting a Planet X record through the Fiori service', async () => {
+    const response = await DELETE(
+      activeSpacefarerUrl,
+      requestConfig('planet-y-manager')
+    );
+
+    expect([403, 404]).to.include(response.status);
+  });
+
+  it('allows a Planet X manager to delete a Planet X record through the Fiori service', async () => {
+    const deleteResponse = await DELETE(
+      activeSpacefarerUrl,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(deleteResponse.status).to.equal(204);
+
+    const readResponse = await GET(
+      activeSpacefarerUrl,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(readResponse.status).to.equal(404);
   });
 });

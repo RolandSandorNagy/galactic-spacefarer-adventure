@@ -23,7 +23,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/galactic/",
+        "uri": "/galactic-ui/",
         "type": "OData",
         "settings": {
           "annotations": [],

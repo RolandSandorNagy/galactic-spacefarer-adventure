@@ -47,7 +47,7 @@ entity SpaceFarers : cuid, managed {
     stardustCollection : Integer not null;
     stardustCollectionStatus : StardustCollectionStatus not null;
 
-    wormholeNavigationSkill : Integer not null;
+    wormholeNavigationSkill : Integer not null @assert.range: [0, 100];
     navigationRank : NavigationRank not null;
 
     spacesuitColor : Association to SpacesuitColors not null @assert.target;

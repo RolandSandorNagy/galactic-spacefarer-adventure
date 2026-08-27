@@ -1,4 +1,5 @@
-using GalacticService as service from '../../srv/galactic-service';
+using GalacticFioriService as service
+  from '../../srv/galactic-fiori-service';
 
 annotate service.SpaceFarers with @(
     UI.HeaderInfo : {
@@ -122,19 +123,43 @@ annotate service.SpaceFarers with @(
     ],
 );
 
+annotate service.SpaceFarers with @(
+    Capabilities.InsertRestrictions : {
+        Insertable : false,
+    },
+    Capabilities.UpdateRestrictions : {
+        Updatable : true,
+    },
+);
+
 annotate service.SpaceFarers with {
+    firstName
+        @Common.Label : 'First Name';
+
+    lastName
+        @Common.Label : 'Last Name';
+
+    email
+        @Common.Label : 'Email';
+
     originPlanet
         @Common.Label : 'Origin Planet';
 
     position
         @Common.Label : 'Position';
 
-    spacesuitColor
-        @Common.Label : 'Spacesuit Color';
+    stardustCollection
+        @Common.Label : 'Stardust Collection';
 
     stardustCollectionStatus
         @Common.Label : 'Stardust Status';
 
+    wormholeNavigationSkill
+        @Common.Label : 'Wormhole Navigation Skill';
+
     navigationRank
         @Common.Label : 'Navigation Rank';
+
+    spacesuitColor
+        @Common.Label : 'Spacesuit Color';
 };
