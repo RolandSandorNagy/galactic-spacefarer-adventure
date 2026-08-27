@@ -1,6 +1,12 @@
 import cds from '@sap/cds';
 import { readFile } from 'node:fs/promises';
 
+import { mock } from 'node:test';
+import {
+  CosmicNotificationService,
+  cosmicNotificationService
+} from '../srv/cosmic-notification-service.js';
+
 const {
   GET,
   POST,
@@ -37,6 +43,18 @@ const requestConfig = (username, password = 'test') => ({
   },
   validateStatus: () => true
 });
+
+const waitFor = async (predicate, { timeout = 1000, interval = 10 } = {}) => {
+  const deadline = Date.now() + timeout;
+
+  while (!predicate()) {
+    if (Date.now() >= deadline) {
+      throw new Error('waitFor: condition not met within timeout');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, interval));
+  }
+};
 
 beforeEach(data.reset);
 
@@ -237,4 +255,296 @@ describe('GalacticService reference data', () => {
 
     expect(response.status).to.equal(405);
   });
+});
+
+describe('GalacticService cosmic preparation', () => {
+  const stardustCases = [
+    { value: 0, expected: 'LOW' },
+    { value: 999, expected: 'LOW' },
+    { value: 1000, expected: 'READY' },
+    { value: 4999, expected: 'READY' },
+    { value: 5000, expected: 'ELITE' }
+  ];
+
+  for (const testCase of stardustCases) {
+    it(
+      `assigns ${testCase.expected} for ${testCase.value} stardust`,
+      async () => {
+        const payload = structuredClone(planetXSpacefarer);
+        payload.stardustCollection = testCase.value;
+
+        // Deliberately submit an incorrect value to prove that
+        // the backend calculates the status itself.
+        payload.stardustCollectionStatus = 'ELITE';
+
+        const response = await POST(
+          `${serviceUrl}/SpaceFarers`,
+          payload,
+          requestConfig('planet-x-manager')
+        );
+
+        expect(response.status).to.equal(201);
+        expect(response.data.stardustCollectionStatus)
+          .to.equal(testCase.expected);
+      }
+    );
+  }
+
+  const navigationCases = [
+    { value: 0, expected: 'NOVICE' },
+    { value: 49, expected: 'NOVICE' },
+    { value: 50, expected: 'SKILLED' },
+    { value: 69, expected: 'SKILLED' },
+    { value: 70, expected: 'EXPERT' },
+    { value: 89, expected: 'EXPERT' },
+    { value: 90, expected: 'MASTER' },
+    { value: 100, expected: 'MASTER' }
+  ];
+
+  for (const testCase of navigationCases) {
+    it(
+      `assigns ${testCase.expected} for navigation skill ${testCase.value}`,
+      async () => {
+        const payload = structuredClone(planetXSpacefarer);
+        payload.wormholeNavigationSkill = testCase.value;
+
+        // Deliberately submit an incorrect value.
+        payload.navigationRank = 'MASTER';
+
+        const response = await POST(
+          `${serviceUrl}/SpaceFarers`,
+          payload,
+          requestConfig('planet-x-manager')
+        );
+
+        expect(response.status).to.equal(201);
+        expect(response.data.navigationRank).to.equal(testCase.expected);
+      }
+    );
+  }
+
+  it('rejects a negative stardust collection', async () => {
+    const payload = structuredClone(planetXSpacefarer);
+    payload.stardustCollection = -1;
+
+    const response = await POST(
+      `${serviceUrl}/SpaceFarers`,
+      payload,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(response.status).to.equal(400);
+  });
+
+  it('rejects navigation skill below zero', async () => {
+    const payload = structuredClone(planetXSpacefarer);
+    payload.wormholeNavigationSkill = -1;
+
+    const response = await POST(
+      `${serviceUrl}/SpaceFarers`,
+      payload,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(response.status).to.equal(400);
+  });
+
+  it('rejects navigation skill above one hundred', async () => {
+    const payload = structuredClone(planetXSpacefarer);
+    payload.wormholeNavigationSkill = 101;
+
+    const response = await POST(
+      `${serviceUrl}/SpaceFarers`,
+      payload,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(response.status).to.equal(400);
+  });
+
+  it('recalculates cosmic values after a relevant update', async () => {
+    await POST(
+      `${serviceUrl}/SpaceFarers`,
+      structuredClone(planetXSpacefarer),
+      requestConfig('planet-x-manager')
+    );
+
+    const updateResponse = await PATCH(
+      `${serviceUrl}/SpaceFarers(${testSpacefarerId})`,
+      {
+        stardustCollection: 5000,
+        wormholeNavigationSkill: 90
+      },
+      requestConfig('planet-x-manager')
+    );
+
+    expect([200, 204]).to.include(updateResponse.status);
+
+    const readResponse = await GET(
+      `${serviceUrl}/SpaceFarers(${testSpacefarerId})`,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(readResponse.data.stardustCollectionStatus).to.equal('ELITE');
+    expect(readResponse.data.navigationRank).to.equal('MASTER');
+  });
+
+  it('prevents clients from directly changing calculated cosmic values', async () => {
+    await POST(
+      `${serviceUrl}/SpaceFarers`,
+      structuredClone(planetXSpacefarer),
+      requestConfig('planet-x-manager')
+    );
+
+    const originalResponse = await GET(
+      `${serviceUrl}/SpaceFarers(${testSpacefarerId})`,
+      requestConfig('planet-x-manager')
+    );
+
+    const updateResponse = await PATCH(
+      `${serviceUrl}/SpaceFarers(${testSpacefarerId})`,
+      {
+        stardustCollectionStatus: 'ELITE',
+        navigationRank: 'MASTER'
+      },
+      requestConfig('planet-x-manager')
+    );
+
+    expect([200, 204]).to.include(updateResponse.status);
+
+    const updatedResponse = await GET(
+      `${serviceUrl}/SpaceFarers(${testSpacefarerId})`,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(updatedResponse.data.stardustCollectionStatus)
+      .to.equal(originalResponse.data.stardustCollectionStatus);
+
+    expect(updatedResponse.data.navigationRank)
+      .to.equal(originalResponse.data.navigationRank);
+    });  
+});
+
+describe('GalacticService cosmic notifications', () => {
+  afterEach(() => {
+    mock.restoreAll();
+  });
+
+  it('triggers a welcome email after successful creation', async () => {
+    const sendWelcomeEmail = mock.method(
+      cosmicNotificationService,
+      'sendWelcomeEmail',
+      async () => ({ messageId: 'test-message' })
+    );
+
+    const response = await POST(
+      `${serviceUrl}/SpaceFarers`,
+      structuredClone(planetXSpacefarer),
+      requestConfig('planet-x-manager')
+    );
+
+    expect(response.status).to.equal(201);
+    expect(sendWelcomeEmail.mock.callCount()).to.equal(1);
+
+    const createdSpacefarer =
+      sendWelcomeEmail.mock.calls[0].arguments[0];
+
+    expect(createdSpacefarer.email).to.equal(planetXSpacefarer.email);
+    expect(createdSpacefarer.stardustCollectionStatus)
+      .to.equal(response.data.stardustCollectionStatus);
+    expect(createdSpacefarer.navigationRank)
+      .to.equal(response.data.navigationRank);
+  });
+
+  it('does not trigger an email when creation is rejected', async () => {
+    const sendWelcomeEmail = mock.method(
+      cosmicNotificationService,
+      'sendWelcomeEmail',
+      async () => ({ messageId: 'test-message' })
+    );
+
+    const payload = structuredClone(planetXSpacefarer);
+    payload.wormholeNavigationSkill = 101;
+
+    const response = await POST(
+      `${serviceUrl}/SpaceFarers`,
+      payload,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(response.status).to.equal(400);
+    expect(sendWelcomeEmail.mock.callCount()).to.equal(0);
+  });
+
+  it('builds the congratulatory email with the correct recipient and content', async () => {
+    const sendMail = mock.fn(async () => ({
+      messageId: 'test-message'
+    }));
+
+    const notificationService =
+      new CosmicNotificationService({ sendMail });
+
+    await notificationService.sendWelcomeEmail({
+      firstName: 'Nova',
+      lastName: 'Starlight',
+      email: 'nova.starlight@planet-x.example',
+      stardustCollectionStatus: 'ELITE',
+      navigationRank: 'MASTER'
+    });
+
+    expect(sendMail.mock.callCount()).to.equal(1);
+
+    const message = sendMail.mock.calls[0].arguments[0];
+
+    expect(message.to).to.equal(
+      'nova.starlight@planet-x.example'
+    );
+    expect(message.subject).to.equal(
+      'Welcome to your Galactic Spacefarer Adventure!'
+    );
+    expect(message.text).to.include('Dear Nova Starlight');
+    expect(message.text).to.include('ELITE');
+    expect(message.text).to.include('MASTER');
+  });
+
+  it('keeps the created spacefarer when email delivery fails', async () => {
+    const sendWelcomeEmail = mock.method(
+      cosmicNotificationService,
+      'sendWelcomeEmail',
+      async () => {
+        throw new Error('SMTP service unavailable');
+      }
+    );
+
+    const notificationLogger = cds.log('cosmic-notifications');
+    const logError = mock.method(
+      notificationLogger,
+      'error',
+      () => {}
+    );
+
+    const createResponse = await POST(
+      `${serviceUrl}/SpaceFarers`,
+      structuredClone(planetXSpacefarer),
+      requestConfig('planet-x-manager')
+    );
+
+    expect(createResponse.status).to.equal(201);
+
+    await waitFor(() => logError.mock.callCount() > 0);
+
+    expect(sendWelcomeEmail.mock.callCount()).to.equal(1);
+    expect(logError.mock.callCount()).to.equal(1);
+
+
+    const readResponse = await GET(
+      `${serviceUrl}/SpaceFarers(${testSpacefarerId})`,
+      requestConfig('planet-x-manager')
+    );
+
+    expect(readResponse.status).to.equal(200);
+    expect(readResponse.data.email).to.equal(
+      planetXSpacefarer.email
+    );
+  });  
 });

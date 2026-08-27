@@ -36,3 +36,8 @@ service GalacticService {
   @readonly
   entity SpacesuitColors as projection on db.SpacesuitColors;
 }
+
+annotate GalacticService.SpaceFarers with {
+  stardustCollectionStatus @readonly;
+  navigationRank @readonly;
+};

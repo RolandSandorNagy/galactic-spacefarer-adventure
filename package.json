@@ -4,7 +4,8 @@
   "type": "module",
   "dependencies": {
     "@sap/cds": "^10",
-    "@sap/xssec": "^4"
+    "@sap/xssec": "^4",
+    "nodemailer": "^9.0.5"
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.2",
