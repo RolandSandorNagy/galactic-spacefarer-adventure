@@ -548,3 +548,36 @@ describe('GalacticService cosmic notifications', () => {
     );
   });  
 });
+
+describe('GalacticService list query behavior', () => {
+  it('supports filtering, sorting and pagination together', async () => {
+    const query = [
+      '$filter=stardustCollectionStatus%20eq%20%27READY%27',
+      '$orderby=stardustCollection%20asc',
+      '$skip=1',
+      '$top=2',
+      '$count=true'
+    ].join('&');
+
+    const response = await GET(
+      `${serviceUrl}/SpaceFarers?${query}`,
+      requestConfig('galactic-admin')
+    );
+
+    expect(response.status).to.equal(200);
+    expect(response.data['@odata.count']).to.equal(3);
+    expect(response.data.value).to.have.length(2);
+
+    expect(
+      response.data.value.map(spacefarer =>
+        spacefarer.stardustCollection
+      )
+    ).to.deep.equal([2700, 3400]);
+
+    expect(
+      response.data.value.every(spacefarer =>
+        spacefarer.stardustCollectionStatus === 'READY'
+      )
+    ).to.equal(true);
+  });
+});

@@ -9,11 +9,14 @@
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.2",
-    "@cap-js/sqlite": "^3"
+    "@cap-js/sqlite": "^3",
+    "cds-plugin-ui5": "^0.17.0",
+    "cross-env": "^10.1.0"
   },
   "scripts": {
     "start": "cds-serve",
-    "test": "node --test"
+    "test": "cross-env CDS_PLUGIN_UI5_ACTIVE=false node --test test/galactic-service.test.js",
+    "watch-spacefarers": "cds watch --open galactic.spacefarer.spacefarers/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "cds": {
     "features": {
@@ -74,5 +77,11 @@
       }
     }
   },
-  "private": true
+  "private": true,
+  "workspaces": [
+    "app/*"
+  ],
+  "sapux": [
+    "app/spacefarers"
+  ]
 }

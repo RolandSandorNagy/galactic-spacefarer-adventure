@@ -1,0 +1,28 @@
+{
+  "generationParameters": {
+    "generationDate": "Thu Aug 27 2026 13:16:20 GMT+0200 (Central European Summer Time)",
+    "generatorPlatform": "Visual Studio Code",
+    "serviceType": "Local CAP",
+    "metadataFilename": "",
+    "serviceUrl": "http://localhost:4004/galactic/",
+    "appName": "spacefarers",
+    "appTitle": "Galactic Spacefarers",
+    "appDescription": "Manage galactic spacefarers and their cosmic journey details.",
+    "appNamespace": "galactic.spacefarer",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.151.0",
+    "enableEslint": true,
+    "enableTypeScript": false,
+    "showMockDataInfo": false,
+    "generatorVersion": "1.31.1",
+    "template": "List Report Page V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [
+      {
+        "type": "Main Entity",
+        "value": "SpaceFarers"
+      }
+    ],
+    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/spacefarers/webapp/index.html"
+  }
+}
