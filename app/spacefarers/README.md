@@ -1,34 +1,39 @@
-## Application Details
-|               |
-| ------------- |
-|**Generation Date and Time**<br>Thu Aug 27 2026 13:16:20 GMT+0200 (Central European Summer Time)|
-|**App Generator**<br>SAP Fiori Application Generator|
-|**App Generator Version**<br>1.31.1|
-|**Generation Platform**<br>Visual Studio Code|
-|**Template Used**<br>List Report Page V4|
-|**Service Type**<br>Local CAP|
-|**Service URL**<br>http://localhost:4004/galactic/|
-|**Module Name**<br>spacefarers|
-|**Application Title**<br>Galactic Spacefarers|
-|**Namespace**<br>galactic.spacefarer|
-|**UI5 Theme**<br>sap_horizon|
-|**UI5 Version**<br>1.151.0|
-|**Enable TypeScript**<br>False|
-|**Add Eslint configuration**<br>True, see https://www.npmjs.com/package/@sap-ux/eslint-plugin-fiori-tools#rules for the eslint rules.|
-|**Main Entity**<br>SpaceFarers|
+# Galactic Spacefarers UI
 
-## spacefarers
+An SAP Fiori Elements application for the Galactic Spacefarer Adventure project, providing a
+List Report and an Object Page over the galactic spacefarer data.
 
-Manage galactic spacefarers and their cosmic journey details.
+## Data source
 
-### Starting the generated app
+The app consumes the draft-enabled OData V4 service at `/galactic-ui/` (`GalacticFioriService`).
 
--   This app has been generated using the SAP Fiori tools - App Generator, as part of the SAP Fiori tools suite.  To launch the generated app, start your CAP project:  and navigate to the following location in your browser:
+## Features
 
-http://localhost:4004/spacefarers/webapp/index.html
+- Filtering, sorting and server-side pagination on the List Report.
+- Planet-based data visibility: non-admin users only see spacefarers authorized for their
+  own planet.
+- Draft-enabled Object Page editing.
+- Stardust collection and spacesuit color are editable.
+- Stardust status and navigation rank are calculated by the server and shown as read-only.
+- Value help for reference data fields (origin planet, position, spacesuit color).
 
-#### Pre-requisites:
+## Local startup
 
-1. Active NodeJS LTS (Long Term Support) version and associated supported NPM version.  (See https://nodejs.org)
+Run from the repository root:
 
+```bash
+npm install
+npm run watch-spacefarers
+```
 
+See the [root README](../../readme.md) for the full project documentation, including the
+backend services, authentication and local mock users.
+
+## Production build
+
+```bash
+npm exec --workspace spacefarers -- ui5 build --all --clean-dest
+```
+
+This produces the build output in `app/spacefarers/dist/`, which is generated and excluded
+from Git.

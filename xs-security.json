@@ -2,21 +2,21 @@
   "scopes": [
     {
       "name": "$XSAPPNAME.SpacefarerViewer",
-      "description": "SpacefarerViewer"
+      "description": "Read spacefarers assigned to the user's planet"
     },
     {
       "name": "$XSAPPNAME.SpacefarerManager",
-      "description": "SpacefarerManager"
+      "description": "Manage spacefarers assigned to the user's planet"
     },
     {
       "name": "$XSAPPNAME.SpacefarerAdmin",
-      "description": "SpacefarerAdmin"
+      "description": "Manage spacefarers across all planets"
     }
   ],
   "attributes": [
     {
       "name": "allowedPlanet",
-      "description": "allowedPlanet",
+      "description": "Planet code used for instance-based authorization",
       "valueType": "s",
       "valueRequired": true
     }
@@ -24,7 +24,7 @@
   "role-templates": [
     {
       "name": "SpacefarerViewer",
-      "description": "generated",
+      "description": "Viewer access to authorized spacefarer records",
       "scope-references": [
         "$XSAPPNAME.SpacefarerViewer"
       ],
@@ -32,7 +32,7 @@
     },
     {
       "name": "SpacefarerManager",
-      "description": "generated",
+      "description": "Manager access to authorized spacefarer records",
       "scope-references": [
         "$XSAPPNAME.SpacefarerManager"
       ],
@@ -40,7 +40,7 @@
     },
     {
       "name": "SpacefarerAdmin",
-      "description": "generated",
+      "description": "Administrator access to all spacefarer records",
       "scope-references": [
         "$XSAPPNAME.SpacefarerAdmin"
       ],
@@ -48,7 +48,7 @@
     },
     {
       "name": "userattributes",
-      "description": "generated",
+      "description": "Assign the allowed planet attribute to a user",
       "default-role-name": "Attributes of a User",
       "scope-references": [],
       "attribute-references": [
