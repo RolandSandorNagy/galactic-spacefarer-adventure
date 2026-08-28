@@ -2,6 +2,9 @@
   "name": "galactic-spacefarer-adventure",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@sap/cds": "^10",
     "@sap/xssec": "^4",
@@ -10,13 +13,16 @@
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.2",
     "@cap-js/sqlite": "^3",
+    "@sap/cds-dk": "^10.0.7",
     "cds-plugin-ui5": "^0.17.0",
-    "cross-env": "^10.1.0"
+    "cross-env": "^10.1.0",
+    "eslint": "^10"
   },
   "scripts": {
     "start": "cds-serve",
     "test": "cross-env CDS_PLUGIN_UI5_ACTIVE=false node --test test/galactic-service.test.js",
-    "watch-spacefarers": "cds watch --open galactic.spacefarer.spacefarers/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-spacefarers": "cds watch --open galactic.spacefarer.spacefarers/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "lint": "eslint . && npm run lint --workspace spacefarers"
   },
   "cds": {
     "features": {

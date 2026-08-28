@@ -146,6 +146,10 @@ If `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` are not all set — which is the
 development and for the automated tests — the service falls back to nodemailer's `jsonTransport`,
 which builds the email in memory without sending it anywhere.
 
+`.env.example` at the repository root documents these variable names. The project does not load
+`.env` files automatically (no `dotenv` wiring is present), so copy it to `.env` for reference and
+export the values into your actual shell/process environment if you want to send real emails.
+
 ## Object Page editability
 
 Field-level annotations on `GalacticFioriService.SpaceFarers` (`srv/galactic-fiori-service.cds`):
@@ -157,7 +161,7 @@ Field-level annotations on `GalacticFioriService.SpaceFarers` (`srv/galactic-fio
 
 ## Prerequisites
 
-- Node.js 22
+- Node.js 22 (enforced via `engines.node` in `package.json`)
 - npm
 
 ## Installation and local startup
@@ -223,6 +227,19 @@ This builds the Fiori Elements app into `app/spacefarers/dist/` (excluded from v
 `.gitignore`). The command has been run and verified locally; there is no Cloud Foundry deployment
 descriptor (e.g. `mta.yaml`) or CI/CD pipeline in this repository.
 
+## Linting
+
+```bash
+npm run lint
+```
+
+This runs `eslint .` at the repository root (backend code, using the `@sap/cds` recommended
+config from `eslint.config.mjs`) and then `npm run lint --workspace spacefarers` (the Fiori
+app, using the `@sap-ux/eslint-plugin-fiori-tools` recommended config from
+`app/spacefarers/eslint.config.mjs`). The root config ignores `app/**`, and the app config
+ignores its own generated `dist/**` output, so each part of the codebase is linted with the
+config meant for it.
+
 ## Key design decisions
 
 - **Reference data is exposed as read-only projections.** `Planets`, `Departments`, `Positions` and
@@ -260,6 +277,7 @@ test/
   galactic-service.test.js      integration tests
   fixtures/*.json                request payloads used by the tests
 xs-security.json                XSUAA scopes/role templates/attributes for production auth
+.env.example                    reference for the SMTP/notification environment variables
 ```
 
 ## Known limitations
