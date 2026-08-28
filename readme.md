@@ -121,15 +121,15 @@ Implemented in the `before` event handler `prepareForCosmicJourney` (`srv/galact
   mapped to `navigationRank`: `< 50` → `NOVICE`, `< 70` → `SKILLED`, `< 90` → `EXPERT`, `>= 90` → `MASTER`.
 - `stardustCollectionStatus` and `navigationRank` are annotated `@readonly` on both services
   and set by the handler rather than accepted from client input, so they cannot be spoofed by a caller.
-  (and set by the handler, not accepted from client input), so they cannot be spoofed by a caller.
 
 ## Welcome-email behavior
 
 An `after` event handler on `CREATE` (`scheduleCosmicWelcomeNotification` in `srv/galactic-service.js`)
 sends a congratulatory email once the creating transaction has succeeded (`req.on('succeeded', ...)`),
 so notification delivery never blocks or fails the HTTP response. `srv/cosmic-notification-service.js`
-builds and sends the message via `nodemailer`; failures are caught with `Promise.allSettled` and
-logged through `cds.log('cosmic-notifications')` rather than propagated.
+builds and sends the message via `nodemailer`; `sendCosmicWelcomeNotification` in
+`srv/galactic-service.js` wraps the send in a `try`/`catch` and logs any failure through
+`cds.log('cosmic-notifications')` rather than propagating it.
 
 Transport configuration is read from environment variables:
 
