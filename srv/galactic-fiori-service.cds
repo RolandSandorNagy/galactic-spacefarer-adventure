@@ -39,24 +39,47 @@ service GalacticFioriService {
 }
 
 annotate GalacticFioriService.SpaceFarers with {
+  // New drafts are filled through PATCH; Core.Immutable would discard that input.
+  // Existing records remain read-only here and are protected by the service handlers.
+  // FieldControl values: 1 = ReadOnly, 7 = Mandatory.
   firstName
-    @Core.Immutable
+    @Common.FieldControl: { $edmJson: { $If: [
+      { $Or: [{ $Path: 'IsActiveEntity' }, { $Path: 'HasActiveEntity' }] },
+      1,
+      7
+    ] } }
     @mandatory;
 
   lastName
-    @Core.Immutable
+    @Common.FieldControl: { $edmJson: { $If: [
+      { $Or: [{ $Path: 'IsActiveEntity' }, { $Path: 'HasActiveEntity' }] },
+      1,
+      7
+    ] } }
     @mandatory;
 
   email
-    @Core.Immutable
+    @Common.FieldControl: { $edmJson: { $If: [
+      { $Or: [{ $Path: 'IsActiveEntity' }, { $Path: 'HasActiveEntity' }] },
+      1,
+      7
+    ] } }
     @mandatory;
 
   originPlanet
-    @Core.Immutable
+    @Common.FieldControl: { $edmJson: { $If: [
+      { $Or: [{ $Path: 'IsActiveEntity' }, { $Path: 'HasActiveEntity' }] },
+      1,
+      7
+    ] } }
     @mandatory;
 
   position
-    @Core.Immutable
+    @Common.FieldControl: { $edmJson: { $If: [
+      { $Or: [{ $Path: 'IsActiveEntity' }, { $Path: 'HasActiveEntity' }] },
+      1,
+      7
+    ] } }
     @mandatory;
 
   stardustCollection
@@ -66,7 +89,11 @@ annotate GalacticFioriService.SpaceFarers with {
     @readonly;
 
   wormholeNavigationSkill
-    @Core.Immutable
+    @Common.FieldControl: { $edmJson: { $If: [
+      { $Or: [{ $Path: 'IsActiveEntity' }, { $Path: 'HasActiveEntity' }] },
+      1,
+      7
+    ] } }
     @mandatory;
 
   navigationRank

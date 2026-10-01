@@ -19,6 +19,12 @@ export default class GalacticService extends cds.ApplicationService {
       enforceAllowedPlanet
     );
 
+    if (SpaceFarers.drafts) {
+      // A new draft may be incomplete, but any supplied planet must be allowed.
+      // Activation still repeats the check on the complete active CREATE data.
+      this.before(['NEW', 'PATCH'], SpaceFarers.drafts, enforceAllowedPlanet);
+    }
+
     this.before(
       ['CREATE', 'UPDATE'],
       SpaceFarers,
@@ -30,6 +36,19 @@ export default class GalacticService extends cds.ApplicationService {
       SpaceFarers,
       scheduleCosmicWelcomeNotification
     );
+
+    // The Node SQLite driver exposes unique violations as generic SQL errors.
+    // Keep the database constraint (including concurrent creates), but give
+    // Fiori a field-specific business error instead of an HTTP 500.
+    this.on('error', error => {
+      if (error.message ===
+          'UNIQUE constraint failed: galactic_spacefarer_SpaceFarers.email') {
+        error.status = error.statusCode = 409;
+        error.code = 'EMAIL_ALREADY_EXISTS';
+        error.message = 'A spacefarer with this email address already exists.';
+        error.target = 'email';
+      }
+    });
 
     return super.init();
   }
@@ -56,7 +75,8 @@ function enforceAllowedPlanet(req) {
   if (!allowedPlanets.includes(requestedPlanet)) {
     req.reject(
       403,
-      'You are not authorized to assign spacefarers to this planet.'
+      'You are not authorized to assign spacefarers to this planet.',
+      'originPlanet_code'
     );
   }
 }

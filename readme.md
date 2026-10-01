@@ -3,7 +3,7 @@
 A CAP (SAP Cloud Application Programming Model) reference application that manages galactic
 spacefarer records — including stardust collection, wormhole navigation skill, origin planet,
 position and spacesuit color — behind a role- and attribute-based authorization layer, with a
-Fiori Elements List Report / Object Page UI for browsing and editing.
+Fiori Elements List Report / Object Page UI for browsing, creating and editing.
 
 ## Project overview
 
@@ -22,7 +22,7 @@ access and a draft-enabled Fiori Elements service that powers the UI.
 | 2 — Service definition | `srv/galactic-service.cds` / `srv/galactic-service.js`: `GalacticService` at `/galactic`, full CRUD on `SpaceFarers`, protected by authentication, role-based restrictions and a planet-based row filter. |
 | 3 — Event handlers | `srv/galactic-service.js`: `before` event handlers validate and derive stardust/navigation values on `CREATE`/`UPDATE`; an `after` event handler on `CREATE` sends a welcome email via `srv/cosmic-notification-service.js`. |
 | 4 — List Report | `app/spacefarers`: a Fiori Elements List Report (`sap.fe.templates.ListReport`) showing spacefarers with stardust status and spacesuit color, with filtering, sorting and pagination; non-admin users only see the records authorized for their own planet. |
-| 5 — Object Page | Same app, `sap.fe.templates.ObjectPage` target with `@odata.draft.enabled`; stardust collection and spacesuit color are editable, all other fields are read-only or immutable. |
+| 5 — Object Page | Same app, `sap.fe.templates.ObjectPage` target with `@odata.draft.enabled`; all required business fields can be entered when creating a record, while existing records allow editing stardust collection and spacesuit color only. |
 
 ## Technology stack
 
@@ -70,8 +70,9 @@ entities (`Planets`, `Departments`, `Positions`, `SpacesuitColors`).
 The UI-facing service (`srv/galactic-fiori-service.cds`, `srv/galactic-fiori-service.js`) behind
 the Fiori Elements app. It reuses `GalacticService`'s handlers and adds:
 
-- `@odata.draft.enabled` for draft-based editing on the Object Page;
-- `Capabilities.InsertRestrictions.Insertable: false` — creation is not offered in the UI;
+- `@odata.draft.enabled` for draft-based creation and editing on the Object Page;
+- `Capabilities.InsertRestrictions.Insertable: true` — the standard List Report **Create** action
+  opens a new draft, subject to the user's write permissions;
 - `Capabilities.UpdateRestrictions.Updatable: true`;
 - field-level annotations described in [Object Page editability](#object-page-editability) below.
 
@@ -89,6 +90,9 @@ on the `READ` and `WRITE` grants. Because that declarative `where` condition can
 against data that does not exist yet, `srv/galactic-service.js` adds an explicit `enforceAllowedPlanet`
 `before` event handler on `CREATE` and `UPDATE` that rejects any attempt to create or move a Spacefarer
 onto a planet outside the caller's `allowedPlanet` attribute (administrators are exempt).
+The Fiori service also checks any supplied planet on draft `NEW` and `PATCH`, and repeats the
+check when activation creates the active record. An incomplete new draft may omit the planet
+temporarily; it cannot be activated without one.
 
 In local development, authentication is basic auth (`cds.requires.auth.kind: "basic"`), configured
 directly in `package.json` with mock users and an `allowedPlanet` attribute per user. For the
@@ -122,6 +126,11 @@ Implemented in the `before` event handler `prepareForCosmicJourney` (`srv/galact
 - `stardustCollectionStatus` and `navigationRank` are annotated `@readonly` on both services
   and set by the handler rather than accepted from client input, so they cannot be spoofed by a caller.
 
+The shared model also declares `@assert.range: [0, _]` for stardust and `@assert.format` for
+email addresses, with readable validation messages. Email uniqueness remains enforced by the
+database; the local SQLite duplicate-email error is translated to HTTP `409` with target `email`,
+so Fiori can associate the message with the input field.
+
 ## Welcome-email behavior
 
 An `after` event handler on `CREATE` (`scheduleCosmicWelcomeNotification` in `srv/galactic-service.js`)
@@ -130,6 +139,11 @@ so notification delivery never blocks or fails the HTTP response. `srv/cosmic-no
 builds and sends the message via `nodemailer`; `sendCosmicWelcomeNotification` in
 `srv/galactic-service.js` wraps the send in a `try`/`catch` and logs any failure through
 `cds.log('cosmic-notifications')` rather than propagating it.
+
+For Fiori creation, this hook belongs to creation of the active record during draft activation.
+Starting, changing or discarding a draft does not send a welcome email; neither does a failed
+activation. Editing an existing active record does not send another welcome email.
+If a later operation in the same atomic OData batch fails, the rolled-back activation sends no email.
 
 Transport configuration is read from environment variables:
 
@@ -156,8 +170,32 @@ Field-level annotations on `GalacticFioriService.SpaceFarers` (`srv/galactic-fio
 
 - `stardustCollection` and `spacesuitColor` are `@mandatory` and editable.
 - `firstName`, `lastName`, `email`, `originPlanet`, `position` and `wormholeNavigationSkill` are
-  `@Core.Immutable @mandatory` — required on creation, fixed afterwards.
+  mandatory and editable on new drafts, then fixed on existing records. Dynamic field control
+  exposes this distinction to Fiori, and the service enforces it for draft updates.
 - `stardustCollectionStatus` and `navigationRank` are `@readonly` — server-computed only.
+
+Origin planet, position and spacesuit color are annotated `@Common.ValueListWithFixedValues` (in
+`app/spacefarers/annotations.cds`) on top of the CAP-generated `@Common.ValueList`. Each of these
+code lists is small and has no extra selection parameters, so Fiori renders them as an inline
+dropdown (code and text shown together) instead of opening the full value-help dialog — one fewer
+click, and no separate popup window for a handful of fixed choices. Required fields and invalid
+values are reported through standard Fiori validation and service messages; activation must
+succeed before the record is finalized.
+
+The Save/Create button itself stays enabled even while a field is in an invalid state — this is
+standard Fiori Elements behavior, not a bug — but a controller extension
+(`app/spacefarers/webapp/ext/controller/ObjectPageExtend.controller.js`, registered under
+`sap.ui5.extends.extensions["sap.ui.controllerExtensions"]` in `manifest.json`) overrides the
+`editFlow.onBeforeSave` hook to check the UI5 message model before the save/activate request is
+sent. If any field already has an `Error`-severity message (for example the out-of-range or
+malformed-email checks below), it shows a message box summarizing them and cancels the save
+instead of silently doing nothing, so pressing Save always gives visible feedback.
+
+With this project's CAP 10 runtime, `@Core.Immutable` also discarded input sent through `PATCH`
+while filling a new draft. The Fiori projection therefore uses dynamic `Common.FieldControl`:
+these fields are mandatory on new drafts and read-only when `IsActiveEntity` or `HasActiveEntity`
+is true. The backend separately discards changes to the fixed fields on existing records and
+their edit drafts, reading draft state from the database rather than trusting client input.
 
 ## Prerequisites
 
@@ -180,11 +218,41 @@ against an in-memory SQLite database seeded from `db/data/*.csv`.
 npm run watch-spacefarers
 ```
 
-This runs `cds watch --open galactic.spacefarer.spacefarers/index.html?sap-ui-xx-viewCache=false`,
+This runs `cds watch --open galactic.spacefarer.spacefarers/test/flp.html?sap-ui-xx-viewCache=false#app-preview`,
 which starts the CAP server together with the Fiori Elements app (served through `cds-plugin-ui5`
 and the `fiori-tools-proxy`/`fiori-tools-appreload` middlewares configured in
 `app/spacefarers/ui5.yaml`) and opens the app in the browser. Log in with any of the mock users
 listed above.
+
+The app opens through `test/flp.html`, the sandbox Fiori Launchpad generated with the app, rather
+than the bare `index.html`. The sandbox provides the shell bar, app title and the back
+navigation/breadcrumb between the List Report and the Object Page; `index.html` renders only the
+UI5 component with none of that chrome, so a reviewer opening it directly has no way back from a
+Spacefarer's Object Page to the list other than the browser's own back button.
+
+### Trying Spacefarer creation locally
+
+Leave SMTP credentials unset for this walkthrough, so notifications use the in-memory transport.
+Use a fresh browser session when switching mock users, because browsers cache basic-auth credentials.
+
+1. Sign in as `planet-x-manager` / `test` and choose **Create** on the List Report. Enter first
+   name `Nova`, last name `Voyager`, a unique email such as `nova.voyager@example.com`, origin
+   planet `PLANET_X`, position `STARSHIP_PILOT`, stardust collection `2100`, wormhole navigation
+   skill `78` and spacesuit color `BLUE`. Pick the associations from their dropdowns.
+2. Choose **Create** / **Save** to activate the draft. Check the Object Page and return to the
+   list: the new record should appear with stardust status `READY` and navigation rank `EXPERT`.
+   Reopen it and check that only stardust collection and spacesuit color remain editable.
+3. Start another record, enter some data, then choose **Cancel** and confirm discarding the
+   draft. It must not appear as an active record.
+4. Try missing required fields, a malformed email, negative stardust, navigation skill above
+   `100` and an already used email. Check the validation messages and that no invalid record
+   becomes active; correct the input or discard the draft.
+5. Check `planet-x-viewer` cannot create records. As `planet-x-manager`, trying `PLANET_Y` must
+   be rejected, and as `planet-y-manager` the newly created `PLANET_X` record must not be visible.
+6. Open an existing record, choose **Edit**, and set stardust collection to a negative number (or
+   type an unknown spacesuit color code directly instead of picking one from the dropdown), then
+   tab out of the field. The field turns red; pressing **Save** must now show a message box listing
+   the problem instead of doing nothing, and the draft must stay open for correction.
 
 ## Tests
 
@@ -194,7 +262,8 @@ npm test
 
 This runs `cross-env CDS_PLUGIN_UI5_ACTIVE=false node --test test/galactic-service.test.js` — the
 UI5 plugin is disabled so the test run only bootstraps the backend services via `@cap-js/cds-test`.
-The suite currently contains 48 tests across 10 suites, all passing.
+The tests use an isolated in-memory SQLite database and mock the welcome-email sender; they
+do not send real emails. Backend integration tests do not replace checking the rendered UI.
 
 ### What the integration tests cover
 
@@ -216,6 +285,10 @@ in-memory instance of the app:
 - **`GalacticFioriService` draft lifecycle** — draft edit/activate/discard, that read-only fields
   cannot be changed through a draft, that an invalid draft cannot be activated, and that the same
   planet-based authorization rules apply to draft editing and deletion.
+- **Fiori draft creation** — successful activation and active-record reads, incomplete or invalid
+  input, viewer and cross-planet creation attempts, cancellation, and welcome-email delivery only
+  after a new active record has been successfully committed, including no delivery after an atomic
+  batch rollback.
 
 ## UI5 production build
 
@@ -248,12 +321,12 @@ config meant for it.
 - **Calculated fields are server-controlled.** `stardustCollectionStatus` and `navigationRank` are
   always derived by the `before` event handler from the raw stardust/navigation values and are
   annotated `@readonly` on both services, so client-supplied values for these fields are ignored.
-- **Fiori creation is intentionally disabled.** `GalacticFioriService` sets
-  `Capabilities.InsertRestrictions.Insertable: false`, so new Spacefarers are not created from the
-  List Report/Object Page UI. `CREATE` remains fully available through `GalacticService` at
-  `/galactic`.
-- **Only stardust collection and spacesuit color are editable on the Object Page.** All other
-  business fields are `@Core.Immutable` once a Spacefarer exists.
+- **Fiori uses standard draft creation.** The List Report Create action opens the existing Object
+  Page, where the user completes and activates a draft or discards it. This creates a business
+  Spacefarer record; it does not register a login user. API creation remains available at `/galactic`.
+- **New and existing records have different editability.** All eight input fields are mandatory
+  during creation. Only stardust collection and spacesuit color can change afterwards in the Fiori
+  service, with server-side enforcement as well as field annotations.
 - **A notification failure does not roll back a successful creation.** The welcome email is sent
   after the creating transaction has already succeeded, and delivery errors are caught and logged
   rather than surfaced to the caller.

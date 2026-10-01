@@ -39,12 +39,16 @@ entity SpacesuitColors : CodeList {
 entity SpaceFarers : cuid, managed {
     firstName : String(100) not null;
     lastName : String(100) not null;
-    email : String(255) not null;
+    email : String(255) not null
+        @assert.format: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        @assert.format.message: 'Enter a valid email address, for example nova@galactic.example.';
  
     originPlanet : Association to Planets not null @assert.target;
     position : Association to Positions not null @assert.target;
     
-    stardustCollection : Integer not null;
+    stardustCollection : Integer not null
+        @assert.range: [0, _]
+        @assert.range.message: 'Stardust collection must be a non-negative integer.';
     stardustCollectionStatus : StardustCollectionStatus not null;
 
     wormholeNavigationSkill : Integer not null @assert.range: [0, 100];

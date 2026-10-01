@@ -125,7 +125,7 @@ annotate service.SpaceFarers with @(
 
 annotate service.SpaceFarers with @(
     Capabilities.InsertRestrictions : {
-        Insertable : false,
+        Insertable : true,
     },
     Capabilities.UpdateRestrictions : {
         Updatable : true,
@@ -143,10 +143,12 @@ annotate service.SpaceFarers with {
         @Common.Label : 'Email';
 
     originPlanet
-        @Common.Label : 'Origin Planet';
+        @Common.Label : 'Origin Planet'
+        @Common.ValueListWithFixedValues : true;
 
     position
-        @Common.Label : 'Position';
+        @Common.Label : 'Position'
+        @Common.ValueListWithFixedValues : true;
 
     stardustCollection
         @Common.Label : 'Stardust Collection';
@@ -161,5 +163,6 @@ annotate service.SpaceFarers with {
         @Common.Label : 'Navigation Rank';
 
     spacesuitColor
-        @Common.Label : 'Spacesuit Color';
+        @Common.Label : 'Spacesuit Color'
+        @Common.ValueListWithFixedValues : true;
 };
